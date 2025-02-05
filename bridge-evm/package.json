@@ -3,18 +3,44 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "prebuild": "npm run clean",
+    "pretest": "npm run build",
+    "clean": "forge clean",
+    "coverage": "npm run pretest && FOUNDRY_PROFILE=coverage forge coverage --report lcov --report-file='coverage/lcov.info' --report summary",
+    "build": "forge build",
+    "test": "forge test",
+    "docgen": "forge doc",
+    "lint": "forge fmt",
+    "postinstall": "forge install",
+    "deploy:bridge:testnet": "WRAPPED_TOKEN=0x2Cf845b49e1c4E5D657fbBF36E97B7B5B7B7b74b forge script -v -g 200 --slow --legacy --broadcast --rpc-url https://network.ambrosus-test.io --verifier sourcify --verifier-url https://sourcify.ambrosus.io/ --verify ./script/DeployBridge.s.sol -i 1",
+    "deploy:bridge:devnet": "WRAPPED_TOKEN=0x2F52348a707ede8Dbcf2BF79cbd65406E92522BD forge script -v -g 200 --slow --legacy --broadcast --rpc-url https://network.ambrosus-dev.io --verifier sourcify --verifier-url https://sourcify.ambrosus.io/ --verify ./script/DeployBridge.s.sol -i 1",
+    "deploy:bridge:mainnet": "WRAPPED_TOKEN=0x2b2d892C3fe2b4113dd7aC0D2c1882AF202FB28F forge script -v -g 200 --slow --legacy --broadcast --rpc-url https://network.ambrosus.io --verifier sourcify --verifier-url https://sourcify.ambrosus.io/ --verify ./script/DeployBridge.s.sol -i 1",
+    "deploy:validator:testnet": "forge script -v -g 200 --slow --legacy --broadcast --rpc-url https://network.ambrosus-test.io --verifier sourcify --verifier-url https://sourcify.ambrosus.io/ --verify ./script/DeployValidator.s.sol -i 1",
+    "deploy:validator:devnet": "forge script -v -g 200 --slow --legacy --broadcast --rpc-url https://network.ambrosus-dev.io --verifier sourcify --verifier-url https://sourcify.ambrosus.io/ --verify ./script/DeployValidator.s.sol -i 1",
+    "deploy:validator:mainnet": "forge script -v -g 200 --slow --legacy --broadcast --rpc-url https://network.ambrosus.io --verifier sourcify --verifier-url https://sourcify.ambrosus.io/ --verify ./script/DeployValidator.s.sol -i 1",
+    "deploy:bridge:testnet:force": "WRAPPED_TOKEN=0x2Cf845b49e1c4E5D657fbBF36E97B7B5B7B7b74b FORCE_DEPLOY=true forge script -v -g 200 --slow --legacy --broadcast --rpc-url https://network.ambrosus-test.io --verifier sourcify --verifier-url https://sourcify.ambrosus.io/ --verify ./script/DeployBridge.s.sol -i 1",
+    "deploy:bridge:devnet:force": "WRAPPED_TOKEN=0x2F52348a707ede8Dbcf2BF79cbd65406E92522BD FORCE_DEPLOY=true forge script -v -g 200 --slow --legacy --broadcast --rpc-url https://network.ambrosus-dev.io --verifier sourcify --verifier-url https://sourcify.ambrosus.io/ --verify ./script/DeployBridge.s.sol -i 1",
+    "deploy:bridge:mainnet:force": "WRAPPED_TOKEN=0x2b2d892C3fe2b4113dd7aC0D2c1882AF202FB28F FORCE_DEPLOY=true forge script -v -g 200 --slow --legacy --broadcast --rpc-url https://network.ambrosus.io --verifier sourcify --verifier-url https://sourcify.ambrosus.io/ --verify ./script/DeployBridge.s.sol -i 1",
+    "deploy:validator:testnet:force": "FORCE_DEPLOY=true forge script -v -g 200 --slow --legacy --broadcast --rpc-url https://network.ambrosus-test.io --verifier sourcify --verifier-url https://sourcify.ambrosus.io/ --verify ./script/DeployValidator.s.sol -i 1",
+    "deploy:validator:devnet:force": "FORCE_DEPLOY=true forge script -v -g 200 --slow --legacy --broadcast --rpc-url https://network.ambrosus-dev.io --verifier sourcify --verifier-url https://sourcify.ambrosus.io/ --verify ./script/DeployValidator.s.sol -i 1",
+    "deploy:validator:mainnet:force": "FORCE_DEPLOY=true forge script -v -g 200 --slow --legacy --broadcast --rpc-url https://network.ambrosus.io --verifier sourcify --verifier-url https://sourcify.ambrosus.io/ --verify ./script/DeployValidator.s.sol -i 1",
+    "deploy:authtority:testnet": "forge script -v -g 200 --slow --legacy --broadcast --rpc-url https://network.ambrosus-test.io --verifier sourcify --verifier-url https://sourcify.ambrosus.io/ --verify ./script/DeployAuthority.s.sol -i 1",
+    "deploy:authtority:devnet": "forge script -v -g 200 --slow --legacy --broadcast --rpc-url https://network.ambrosus-dev.io --verifier sourcify --verifier-url https://sourcify.ambrosus.io/ --verify ./script/DeployAuthority.s.sol -i 1",
+    "deploy:authtority:mainnet": "forge script -v -g 200 --slow --legacy --broadcast --rpc-url https://network.ambrosus.io --verifier sourcify --verifier-url https://sourcify.ambrosus.io/ --verify ./script/DeployAuthority.s.sol -i 1",
+    "deploy:authtority:testnet:force": "FORCE_DEPLOY=true forge script -v -g 200 --slow --legacy --broadcast --rpc-url https://network.ambrosus-test.io --verifier sourcify --verifier-url https://sourcify.ambrosus.io/ --verify ./script/DeployAuthority.s.sol -i 1",
+    "deploy:authtority:devnet:force": "FORCE_DEPLOY=true forge script -v -g 200 --slow --legacy --broadcast --rpc-url https://network.ambrosus-dev.io --verifier sourcify --verifier-url https://sourcify.ambrosus.io/ --verify ./script/DeployAuthority.s.sol -i 1",
+    "deploy:authtority:mainnet:force": "FORCE_DEPLOY=true forge script -v -g 200 --slow --legacy --broadcast --rpc-url https://network.ambrosus.io --verifier sourcify --verifier-url https://sourcify.ambrosus.io/ --verify ./script/DeployAuthority.s.sol -i 1"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "description": "",
   "devDependencies": {
-    "@nomicfoundation/hardhat-toolbox": "^5.0.0",
-    "hardhat": "^2.22.17"
+    "@openzeppelin/foundry-upgrades": "^0.4.0"
   },
   "dependencies": {
     "@openzeppelin/contracts": "^5.2.0",
-    "@openzeppelin/contracts-upgradeable": "^5.2.0"
+    "@openzeppelin/contracts-upgradeable": "^5.2.0",
+    "ethers": "^6.13.5"
   }
 }
