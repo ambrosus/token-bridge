@@ -1,0 +1,43 @@
+name: Publish SDK Package to NPM
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'The tag to publish with'
+        required: true
+        default: 'latest'
+
+jobs:
+  release:
+    name: Publish SDK
+    runs-on: ubuntu-latest
+    permissions:
+      packages: write
+      contents: read
+    defaults:
+      run:
+        working-directory: ./sdk
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 'lts/*'
+          registry-url: "https://registry.npmjs.org"
+          scope: "@airdao"
+          cache: 'npm'
+          cache-dependency-path: 'sdk/package-lock.json'
+      - name: Install dependencies
+        run: npm ci
+      - name: Test package
+        run: npm test
+      - name: Build package
+        run: npm run build
+      - name: Publish package
+        run: |
+          if [ "${{ github.event_name }}" == "release" ]; then
+            npm publish --access public
+          else
+            npm publish --access public --tag ${{ github.event.inputs.tag }}
+          fi
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
