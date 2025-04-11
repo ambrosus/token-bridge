@@ -12,7 +12,7 @@ export const SOLANA_DEV_CHAIN_ID = bytesToBigInt(
   stringToBytes("SOLANADN", { size: 8 }),
 );
 
-const EVMChains = {
+export const EVMChains = {
   amb: 16718,
   "amb-test": 22040,
   "amb-dev": 30746,

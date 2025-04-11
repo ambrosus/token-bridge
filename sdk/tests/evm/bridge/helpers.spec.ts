@@ -5,63 +5,95 @@ import { receipts } from "../../mocks/fixtures/receipt";
 import { SendPayload } from "../../../src/backend";
 
 describe("Test bridge helpers", () => {
-  test.each<[Address, Hex]>([
-    [
-      "0xe9882a518D20F856f2f8A5af2c8098eBDc186876",
-      "0x000000000000000000000000e9882a518d20f856f2f8a5af2c8098ebdc186876",
-    ],
-    [
-      "0x428a7d66E2CA1F00F71a9DDc9bffF02fbd5910FF",
-      "0x000000000000000000000000428a7d66e2ca1f00f71a9ddc9bfff02fbd5910ff",
-    ],
-    [
-      "0x65dF51CA9E034968AcA075F9a92C3fC57EaaE3Bd",
-      "0x00000000000000000000000065df51ca9e034968aca075f9a92c3fc57eaae3bd",
-    ],
-    [
-      "0xaa967e874087E425516d36Fd8cF06A28146c345D",
-      "0x000000000000000000000000aa967e874087e425516d36fd8cf06a28146c345d",
-    ],
-    [
-      "0xd5b75805F56000f9F1B275f3b093bE92A98384b2",
-      "0x000000000000000000000000d5b75805f56000f9f1b275f3b093be92a98384b2",
-    ],
-    [
-      "0x1F7b9B134362a80aDc825fFDc91E0E5669575Be5",
-      "0x0000000000000000000000001f7b9b134362a80adc825ffdc91e0e5669575be5",
-    ],
-  ])(
-    "Should correctly convert evm address to bytes32 hex",
-    (address, expectedHex) => {
-      expect(evm.helpers.evmAddressToBytes32(address)).toBe(expectedHex);
-      expect(evm.helpers.addressToBytes32(address)).toBe(expectedHex);
-    },
-  );
+  describe("Address conversion", () => {
+    const evmAddresses: { [address: Address]: Hex } = {
+      "0xe9882a518D20F856f2f8A5af2c8098eBDc186876":
+        "0x000000000000000000000000e9882a518d20f856f2f8a5af2c8098ebdc186876",
+      "0x428a7d66E2CA1F00F71a9DDc9bffF02fbd5910FF":
+        "0x000000000000000000000000428a7d66e2ca1f00f71a9ddc9bfff02fbd5910ff",
+      "0x65dF51CA9E034968AcA075F9a92C3fC57EaaE3Bd":
+        "0x00000000000000000000000065df51ca9e034968aca075f9a92c3fc57eaae3bd",
+      "0xaa967e874087E425516d36Fd8cF06A28146c345D":
+        "0x000000000000000000000000aa967e874087e425516d36fd8cf06a28146c345d",
+      "0xd5b75805F56000f9F1B275f3b093bE92A98384b2":
+        "0x000000000000000000000000d5b75805f56000f9f1b275f3b093be92a98384b2",
+      "0x1F7b9B134362a80aDc825fFDc91E0E5669575Be5":
+        "0x0000000000000000000000001f7b9b134362a80adc825ffdc91e0e5669575be5",
+    };
 
-  test.each<[string, Hex]>([
-    [
-      "ambZMSUBvU8bLfxop5uupQd9tcafeJKea1KoyTv2yM1",
-      "0x08a6976346b7171e4240d4b44ef7e80dd595aca0cefbb3f8927d236252a86420",
-    ],
-    [
-      "samb9vCFCTEvoi3eWDErSCb5GvTq8Kgv6VKSqvt7pgi",
-      "0x0cf53911c806ccffeb6a2cf754a5ec25b87f7a733cf375a90ce5faac9fcf4c5b",
-    ],
-    [
-      "usdc3xpQ18NLAumSUvadS62srrkxQWrvQHugk8Nv7MA",
-      "0x0d8b736adf5b3cad0c946e2b48d184b299fcb25ed09eb55b444b99284fe3f5a1",
-    ],
-    [
-      "So11111111111111111111111111111111111111112",
-      "0x069b8857feab8184fb687f634618c035dac439dc1aeb3b5598a0f00000000001",
-    ],
-  ])(
-    "Should correctly convert solana address to bytes32 hex",
-    (address, expectedHex) => {
-      expect(evm.helpers.solanaAddressToBytes32(address)).toBe(expectedHex);
-      expect(evm.helpers.base58AddressToBytes32(address)).toBe(expectedHex);
-    },
-  );
+    const svmAddresses: { [address: string]: Hex } = {
+      ambZMSUBvU8bLfxop5uupQd9tcafeJKea1KoyTv2yM1:
+        "0x08a6976346b7171e4240d4b44ef7e80dd595aca0cefbb3f8927d236252a86420",
+      samb9vCFCTEvoi3eWDErSCb5GvTq8Kgv6VKSqvt7pgi:
+        "0x0cf53911c806ccffeb6a2cf754a5ec25b87f7a733cf375a90ce5faac9fcf4c5b",
+      usdc3xpQ18NLAumSUvadS62srrkxQWrvQHugk8Nv7MA:
+        "0x0d8b736adf5b3cad0c946e2b48d184b299fcb25ed09eb55b444b99284fe3f5a1",
+      So11111111111111111111111111111111111111112:
+        "0x069b8857feab8184fb687f634618c035dac439dc1aeb3b5598a0f00000000001",
+    };
+
+    test.each<[Address, Hex]>(
+      Object.entries(evmAddresses).map(([address, b32Address]) => [
+        address as Address,
+        b32Address,
+      ]),
+    )(
+      "Should correctly convert evm address to bytes32 hex",
+      (address, expectedHex) => {
+        expect(evm.helpers.evmAddressToBytes32(address)).toBe(expectedHex);
+        expect(evm.helpers.addressToBytes32(address)).toBe(expectedHex);
+      },
+    );
+
+    test.each<[string, Hex]>(Object.entries(svmAddresses))(
+      "Should correctly convert solana address to bytes32 hex",
+      (address, expectedHex) => {
+        expect(evm.helpers.solanaAddressToBytes32(address)).toBe(expectedHex);
+        expect(evm.helpers.base58AddressToBytes32(address)).toBe(expectedHex);
+      },
+    );
+
+    test.each<[Hex, Address]>(
+      Object.entries(evmAddresses).map(([address, b32Address]) => [
+        b32Address,
+        address as Address,
+      ]),
+    )(
+      "Should correctly convert bytes32 hex to evm address",
+      (b32Address, expectedAddress) => {
+        expect(evm.helpers.evmAddressFromBytes32(b32Address)).toBe(
+          expectedAddress,
+        );
+      },
+    );
+
+    test("Should fail when converting invalid bytes32 hex to evm/svm address", () => {
+      expect(() =>
+        evm.helpers.evmAddressFromBytes32(
+          "0x0000000000000000e9882a518d20f856f2f8a5af2c8098ebdc186876",
+        ),
+      ).toThrow("Possibly invalid hex bytes32 address");
+      expect(() =>
+        evm.helpers.solanaAddressFromBytes32(
+          "0x0000000000000000e9882a518d20f856f2f8a5af2c8098ebdc186876",
+        ),
+      ).toThrow("Possibly invalid hex bytes32 address");
+    });
+
+    test.each<[Hex, string]>(
+      Object.entries(svmAddresses).map(([address, b32Address]) => [
+        b32Address,
+        address,
+      ]),
+    )(
+      "Should correctly convert bytes32 hex to solana address",
+      (b32Address, expectedAddress) => {
+        expect(evm.helpers.solanaAddressFromBytes32(b32Address)).toBe(
+          expectedAddress,
+        );
+      },
+    );
+  });
 
   test.each<[Hex[], Hex]>([
     [
@@ -163,5 +195,88 @@ describe("Test bridge helpers", () => {
     expect(evm.helpers.apiPayloadToCallPayload(apiPayload)).toStrictEqual(
       expectedCallPayload,
     );
+  });
+
+  describe("Combining flags", () => {
+    test("Should combine flags correctly", () => {
+      const flag1 = evm.helpers.BridgeFlags.SHOULD_WRAP;
+      const flag2 = evm.helpers.BridgeFlags.SHOULD_UNWRAP;
+      const combinedFlags = evm.helpers.combineFlagsArray(flag1, flag2);
+      expect(combinedFlags).toBe(flag1 | flag2);
+    });
+
+    test.each([
+      {
+        isSenderTxOrigin: true,
+        sendWithPermit: true,
+        shouldWrap: true,
+      },
+      {
+        shouldUnwrap: true,
+        sendNativeToReceiver: true,
+        shouldRestake: true,
+      },
+      {
+        shouldUnwrap: true,
+        shouldWrap: true,
+      },
+      {
+        shouldUnwrap: true,
+        sendWithPermit: true,
+        shouldWrap: true,
+      },
+    ])("Should check if flags are set correctly", (params) => {
+      const combinedFlags = evm.helpers.combineFlags(params);
+      expect(
+        evm.helpers.checkFlag(
+          combinedFlags,
+          evm.helpers.BridgeFlags.SENDER_IS_TXORIGIN,
+        ),
+      ).toBe(params.isSenderTxOrigin ?? false);
+      expect(
+        evm.helpers.checkFlag(
+          combinedFlags,
+          evm.helpers.BridgeFlags.SEND_WITH_PERMIT,
+        ),
+      ).toBe(params.sendWithPermit ?? false);
+      expect(
+        evm.helpers.checkFlag(
+          combinedFlags,
+          evm.helpers.BridgeFlags.SHOULD_WRAP,
+        ),
+      ).toBe(params.shouldWrap ?? false);
+      expect(
+        evm.helpers.checkFlag(
+          combinedFlags,
+          evm.helpers.BridgeFlags.SHOULD_UNWRAP,
+        ),
+      ).toBe(params.shouldUnwrap ?? false);
+      expect(
+        evm.helpers.checkFlag(
+          combinedFlags,
+          evm.helpers.BridgeFlags.SEND_NATIVE_TO_RECEIVER,
+        ),
+      ).toBe(params.sendNativeToReceiver ?? false);
+      expect(
+        evm.helpers.checkFlag(
+          combinedFlags,
+          evm.helpers.BridgeFlags.SHOULD_RESTAKE,
+        ),
+      ).toBe(params.shouldRestake ?? false);
+      expect(combinedFlags).toBe(
+        (params.isSenderTxOrigin
+          ? evm.helpers.BridgeFlags.SENDER_IS_TXORIGIN
+          : 0n) |
+          (params.sendWithPermit
+            ? evm.helpers.BridgeFlags.SEND_WITH_PERMIT
+            : 0n) |
+          (params.shouldWrap ? evm.helpers.BridgeFlags.SHOULD_WRAP : 0n) |
+          (params.shouldUnwrap ? evm.helpers.BridgeFlags.SHOULD_UNWRAP : 0n) |
+          (params.sendNativeToReceiver
+            ? evm.helpers.BridgeFlags.SEND_NATIVE_TO_RECEIVER
+            : 0n) |
+          (params.shouldRestake ? evm.helpers.BridgeFlags.SHOULD_RESTAKE : 0n),
+      );
+    });
   });
 });

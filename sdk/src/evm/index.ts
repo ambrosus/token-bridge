@@ -8,8 +8,10 @@ import * as helpersBridge from "./bridge/helpers";
 import { checkBalanceNative } from "./native/balance";
 import { checkAllowanceERC20 } from "./token/checkAllowance";
 import { handleCustomError } from "./utils/customErrors";
+import { BridgeFlags } from "./constants";
 export const helpers = {
   ...helpersBridge,
+  BridgeFlags,
   getBridgeContract,
   checkBalanceNative,
   checkAllowanceERC20,
@@ -30,4 +32,5 @@ export const contract = {
   },
 };
 
+export type { BridgeFlags } from "./constants";
 export type * from "./types";

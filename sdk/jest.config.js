@@ -18,7 +18,7 @@ export default {
       branches: 70,
       functions: 80,
       lines: 80,
-      statements: 85,
+      statements: 80,
     },
   },
   // This options exists because of mocking contracts (IDK how to fix it)

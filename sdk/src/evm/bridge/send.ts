@@ -6,10 +6,15 @@ import {
   WriteContractReturnType,
 } from "viem";
 import { getBridgeContract } from "./contract";
-import { type SendPayloadEVM, type SendCall } from "../types/calls";
+import {
+  type SendPayloadEVM,
+  type SendCall,
+} from "../types/calls";
 import { checkAllowanceERC20 } from "../token/checkAllowance";
 import { checkBalanceNative } from "../native/balance";
 import { handleCustomError } from "../utils/customErrors";
+import { wrappedStatus, checkFlag } from "./helpers";
+import { BridgeFlags } from "../constants";
 
 /**
  * Send bridge transaction from the EVM chain contract
@@ -31,7 +36,25 @@ export async function sendFromEVM(
     publicClient,
     walletClient,
   );
-  if (!sendParams._deadline && !sendParams.v && !sendParams.r && !sendParams.s)
+  let value = sendParams.payload.feeAmount;
+  // TODO: check if token can be wrapped on this chain
+  if (checkFlag(sendParams.payload.flags, BridgeFlags.SHOULD_WRAP)) {
+    if (
+      !(await wrappedStatus(
+        sendParams.payload.tokenAddress,
+        sendParams.payload.chainFrom,
+      ))
+    ) {
+      throw new Error("Token cannot be wrapped in source chain");
+    }
+    value += sendParams.payload.amountToSend;
+  } else if (
+    !sendParams._deadline &&
+    !sendParams.v &&
+    !sendParams.r &&
+    !sendParams.s &&
+    !checkFlag(sendParams.payload.flags, BridgeFlags.SEND_WITH_PERMIT)
+  ) {
     await checkAllowanceERC20(
       ("0x" + sendParams.payload.tokenAddress.slice(-40)) as Address,
       walletClient.account?.address!,
@@ -39,18 +62,31 @@ export async function sendFromEVM(
       sendParams.payload.amountToSend,
       publicClient,
     );
-  await checkBalanceNative(
-    walletClient.account?.address!,
-    sendParams.payload.feeAmount,
-    publicClient,
-  );
+  }
+  await checkBalanceNative(walletClient.account?.address!, value, publicClient);
+  if (checkFlag(sendParams.payload.flags, BridgeFlags.SHOULD_UNWRAP)) {
+    if (
+      !(await wrappedStatus(
+        sendParams.payload.externalTokenAddress,
+        sendParams.payload.chainTo,
+      ))
+    ) {
+      throw new Error("Token cannot be unwrapped in destination chain");
+    }
+  }
   try {
     const params: Array<Hex | SendPayloadEVM | bigint> = [
       sendParams.recipient,
       sendParams.payload,
       sendParams.payloadSignature,
     ];
-    if (sendParams._deadline && sendParams.v && sendParams.r && sendParams.s) {
+    if (
+      checkFlag(sendParams.payload.flags, BridgeFlags.SEND_WITH_PERMIT) &&
+      sendParams._deadline &&
+      sendParams.v &&
+      sendParams.r &&
+      sendParams.s
+    ) {
       params.push(
         sendParams._deadline,
         sendParams.v,
@@ -58,12 +94,8 @@ export async function sendFromEVM(
         sendParams.s,
       );
     }
-    await bridgeContract.simulate.send(params, {
-      value: sendParams.payload.feeAmount,
-    });
-    return await bridgeContract.write.send(params, {
-      value: sendParams.payload.feeAmount,
-    });
+    await bridgeContract.simulate.send(params, { value });
+    return await bridgeContract.write.send(params, { value });
   } catch (err) {
     throw handleCustomError(err as Error);
   }
