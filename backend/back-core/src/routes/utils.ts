@@ -458,6 +458,14 @@ export const signaturesResponseSchema = z.object({
     description:
       "If the receipt is ready to be claimed and has enough signatures",
   }),
+  messageHash: z
+    .string()
+    .regex(/^0x([a-fA-F0-9]{2})+$/)
+    .openapi({
+      example:
+        "0x14610d481d0b786920d49cb6318a03ac781ae3a031b306932773c0aad66339547d271ec0c306f62f4e297a8a6cd4c05774863a24852b3fe9a499a355a5fe8fb11b",
+      description: "Hashed receipt of the transaction",
+    }),
   signatures: z.array(signaturesSchema).openapi({
     description: "Signatures of the transaction",
   }),
@@ -582,164 +590,175 @@ export const TokenConfigSchema = z.object({
         },
       },
     }),
-  tokens: z.record(
-    z
-      .string()
-      .describe("Token symbol")
-      .openapi({
-        description: "Token symbol",
-        examples: ["USDC", "SAMB", "wSOL"],
-      }),
-    z.object({
-      isActive: z.boolean().openapi({
-        description: "If token is active for transfers",
-        example: true,
-      }),
-      name: z.string().openapi({
-        description: "Token name",
-        examples: ["USD Coin", "Synthetic Amber", "Wrapped SOL"],
-      }),
-      symbol: z.string().openapi({
-        description: "Token symbol",
-        examples: ["USDC", "SAMB", "wSOL"],
-      }),
-      ticker: z.string().openapi({
-        description: "Token ticker to get prices",
-        examples: ["USDT", "AMB", "SOL"],
-      }),
-      logo: z.string().url().optional().openapi({
-        description: "Token logo URL",
-        example:
-          "https://en.wikipedia.org/wiki/File:Solana_logo.png#/media/File:Solana_logo.png",
-      }),
-      networks: z.record(
-        z
-          .string()
-          .describe("Chain ID")
+  tokens: z
+    .record(
+      z
+        .string()
+        .describe("Token symbol")
+        .openapi({
+          description: "Token symbol",
+          examples: ["USDC", "SAMB", "wSOL"],
+        }),
+      z.object({
+        isActive: z.boolean().openapi({
+          description: "If token is active for transfers",
+          example: true,
+        }),
+        name: z.string().openapi({
+          description: "Token name",
+          examples: ["USD Coin", "Synthetic Amber", "Wrapped SOL"],
+        }),
+        symbol: z.string().openapi({
+          description: "Token symbol",
+          examples: ["USDC", "SAMB", "wSOL"],
+        }),
+        ticker: z.string().openapi({
+          description: "Token ticker to get prices",
+          examples: ["USDT", "AMB", "SOL"],
+        }),
+        logo: z.string().url().optional().openapi({
+          description: "Token logo URL",
+          example:
+            "https://en.wikipedia.org/wiki/File:Solana_logo.png#/media/File:Solana_logo.png",
+        }),
+        networks: z
+          .record(
+            z
+              .string()
+              .describe("Chain ID")
+              .openapi({
+                description: "Chain ID",
+                examples: ["22040", "6003100671677645902"],
+              }),
+            z.object({
+              address: z
+                .union([
+                  z.string().regex(EvmAddressRegex),
+                  z.string().regex(SvmAddressRegex),
+                ])
+                .openapi({
+                  description: "Token address",
+                  examples: [
+                    "0xB547f613B72928d4F62BCAc6Cc0d28C721f8D6bF",
+                    "usdc3xpQ18NLAumSUvadS62srrkxQWrvQHugk8Nv7MA",
+                  ],
+                }),
+              denomination: z
+                .number()
+                .nonnegative()
+                .openapi({
+                  description: "Token denomination (decimals)",
+                  examples: [18, 6],
+                }),
+              isPrimary: z.boolean().openapi({
+                description: "If token is primary on this network",
+                examples: [false, true],
+              }),
+              nativeCoin: z
+                .string()
+                .optional()
+                .openapi({
+                  description: "Native coin symbol",
+                  examples: ["AMB", "SOL"],
+                }),
+            })
+          )
           .openapi({
-            description: "Chain ID",
-            examples: ["22040", "6003100671677645902"],
+            description: "Token data on different networks",
+            examples: [
+              {
+                "22040": {
+                  address: "0x2Cf845b49e1c4E5D657fbBF36E97B7B5B7B7b74b",
+                  denomination: 18,
+                  isPrimary: true,
+                  nativeCoin: "AMB",
+                },
+                "6003100671677645902": {
+                  address: "samb9vCFCTEvoi3eWDErSCb5GvTq8Kgv6VKSqvt7pgi",
+                  denomination: 6,
+                  isPrimary: false,
+                },
+              },
+              {
+                "22040": {
+                  address: "0xB547f613B72928d4F62BCAc6Cc0d28C721f8D6bF",
+                  denomination: 18,
+                  isPrimary: false,
+                },
+                "6003100671677645902": {
+                  address: "usdc3xpQ18NLAumSUvadS62srrkxQWrvQHugk8Nv7MA",
+                  denomination: 6,
+                  isPrimary: true,
+                },
+              },
+            ],
           }),
-        z.object({
-          address: z
-            .union([
-              z.string().regex(EvmAddressRegex),
-              z.string().regex(SvmAddressRegex),
-            ])
-            .openapi({
-              description: "Token address",
-              examples: [
-                "0xB547f613B72928d4F62BCAc6Cc0d28C721f8D6bF",
-                "usdc3xpQ18NLAumSUvadS62srrkxQWrvQHugk8Nv7MA",
-              ],
-            }),
-          denomination: z.number().nonnegative().openapi({
-            description: "Token denomination (decimals)",
-            examples: [18, 6],
-          }),
-          isPrimary: z.boolean().openapi({
-            description: "If token is primary on this network",
-            examples: [false, true],
-          }),
-          nativeCoin: z.string().optional().openapi({
-            description: "Native coin symbol",
-            examples: ["AMB", "SOL"],
-          })
-        })
-      ).openapi({
-        description: "Token data on different networks",
-        examples: [{
-          "22040": {
-            "address": "0x2Cf845b49e1c4E5D657fbBF36E97B7B5B7B7b74b",
-            "denomination": 18,
-            "isPrimary": true,
-            "nativeCoin": "AMB"
-          },
-          "6003100671677645902": {
-            "address": "samb9vCFCTEvoi3eWDErSCb5GvTq8Kgv6VKSqvt7pgi",
-            "denomination": 6,
-            "isPrimary": false
-          }
-        },
-        {
-          "22040": {
-            "address": "0xB547f613B72928d4F62BCAc6Cc0d28C721f8D6bF",
-            "denomination": 18,
-            "isPrimary": false
-          },
-          "6003100671677645902": {
-            "address": "usdc3xpQ18NLAumSUvadS62srrkxQWrvQHugk8Nv7MA",
-            "denomination": 6,
-            "isPrimary": true
-          }
-        }]
       })
+    )
+    .openapi({
+      description: "Tokens configuration for different networks",
+      example: {
+        SAMB: {
+          isActive: true,
+          name: "Synthetic Amber",
+          symbol: "SAMB",
+          ticker: "AMB",
+          logo: "https://media-exp1.licdn.com/dms/image/C560BAQFuR2Fncbgbtg/company-logo_200_200/0/1636390910839?e=2159024400&v=beta&t=W0WA5w02tIEH859mVypmzB_FPn29tS5JqTEYr4EYvps",
+          networks: {
+            "22040": {
+              address: "0x2Cf845b49e1c4E5D657fbBF36E97B7B5B7B7b74b",
+              denomination: 18,
+              isPrimary: true,
+              nativeCoin: "AMB",
+            },
+            "6003100671677645902": {
+              address: "samb9vCFCTEvoi3eWDErSCb5GvTq8Kgv6VKSqvt7pgi",
+              denomination: 6,
+              isPrimary: false,
+            },
+          },
+        },
+        USDC: {
+          isActive: true,
+          name: "USD Coin",
+          symbol: "USDC",
+          ticker: "USDT",
+          logo: "https://etherscan.io/token/images/centre-usdc_28.png",
+          networks: {
+            "22040": {
+              address: "0xB547f613B72928d4F62BCAc6Cc0d28C721f8D6bF",
+              denomination: 18,
+              isPrimary: false,
+            },
+            "6003100671677645902": {
+              address: "usdc3xpQ18NLAumSUvadS62srrkxQWrvQHugk8Nv7MA",
+              denomination: 6,
+              isPrimary: true,
+            },
+          },
+        },
+        wSOL: {
+          isActive: true,
+          name: "Wrapped Solana",
+          symbol: "wSOL",
+          ticker: "SOL",
+          logo: "https://en.wikipedia.org/wiki/File:Solana_logo.png#/media/File:Solana_logo.png",
+          networks: {
+            "22040": {
+              address: "0x5B9E2BD997bc8f6aE97145cE0a8dEE075653f1AA",
+              denomination: 18,
+              isPrimary: false,
+            },
+            "6003100671677645902": {
+              address: "So11111111111111111111111111111111111111112",
+              denomination: 6,
+              isPrimary: true,
+              nativeCoin: "SOL",
+            },
+          },
+        },
+      },
     }),
-  ).openapi({
-    description: "Tokens configuration for different networks",
-    example: {
-      "SAMB": {
-        "isActive": true,
-        "name": "Synthetic Amber",
-        "symbol": "SAMB",
-        "ticker": "AMB",
-        "logo": "https://media-exp1.licdn.com/dms/image/C560BAQFuR2Fncbgbtg/company-logo_200_200/0/1636390910839?e=2159024400&v=beta&t=W0WA5w02tIEH859mVypmzB_FPn29tS5JqTEYr4EYvps",
-        "networks": {
-          "22040": {
-            "address": "0x2Cf845b49e1c4E5D657fbBF36E97B7B5B7B7b74b",
-            "denomination": 18,
-            "isPrimary": true,
-            "nativeCoin": "AMB"
-          },
-          "6003100671677645902": {
-            "address": "samb9vCFCTEvoi3eWDErSCb5GvTq8Kgv6VKSqvt7pgi",
-            "denomination": 6,
-            "isPrimary": false
-          }
-        }
-      },
-      "USDC": {
-        "isActive": true,
-        "name": "USD Coin",
-        "symbol": "USDC",
-        "ticker": "USDT",
-        "logo": "https://etherscan.io/token/images/centre-usdc_28.png",
-        "networks": {
-          "22040": {
-            "address": "0xB547f613B72928d4F62BCAc6Cc0d28C721f8D6bF",
-            "denomination": 18,
-            "isPrimary": false
-          },
-          "6003100671677645902": {
-            "address": "usdc3xpQ18NLAumSUvadS62srrkxQWrvQHugk8Nv7MA",
-            "denomination": 6,
-            "isPrimary": true
-          }
-        }
-      },
-      "wSOL": {
-        "isActive": true,
-        "name": "Wrapped Solana",
-        "symbol": "wSOL",
-        "ticker": "SOL",
-        "logo": "https://en.wikipedia.org/wiki/File:Solana_logo.png#/media/File:Solana_logo.png",
-        "networks": {
-          "22040": {
-            "address": "0x5B9E2BD997bc8f6aE97145cE0a8dEE075653f1AA",
-            "denomination": 18,
-            "isPrimary": false
-          },
-          "6003100671677645902": {
-            "address": "So11111111111111111111111111111111111111112",
-            "denomination": 6,
-            "isPrimary": true,
-            "nativeCoin": "SOL"
-          }
-        }
-      }
-    }
-  })
 });
-
 
 export type TokenConfig = z.infer<typeof TokenConfigSchema>;

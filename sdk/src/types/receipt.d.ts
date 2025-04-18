@@ -37,6 +37,7 @@ export interface ReceiptSignatures {
   signatures: Array<{
     receiptId: string;
     signedBy: string;
+    messageHash: Hex;
     signature: Hex;
   }>;
 }

@@ -3,7 +3,7 @@ import { receipt, signatures } from "../db/schema/core.schema";
 import { receiptsMetaInIndexerEvm } from "../db/schema/evm.schema";
 import { receiptsMetaInIndexerSolana } from "../db/schema/solana.schema";
 import { eq, or, asc, desc, ne, and, notInArray, inArray } from "drizzle-orm";
-import { toBytes, keccak256, recoverMessageAddress, encodePacked } from "viem";
+import { toBytes, keccak256, recoverMessageAddress, encodePacked, bytesToHex } from "viem";
 import { consoleLogger } from "../utils";
 import { serializeReceivePayload, ReceivePayload } from "../utils/solana";
 import {
@@ -14,6 +14,7 @@ import {
 import nacl from "tweetnacl";
 import { PublicKey } from "@solana/web3.js";
 import { Networks } from "../utils/networks";
+import { Hash } from "ox";
 
 export class ReceiptController {
   db: NodePgDatabase;
@@ -95,20 +96,19 @@ export class ReceiptController {
             result.map((r) => r.receiptId)
           )
         );
-      return result
-        .map((r) => {
-          const metaEvm = metasEvm.filter((m) => m.receiptId === r.receiptId);
-          const metaSolana = metasSolana.filter(
-            (m) => m.receiptId === r.receiptId
-          );
-          return {
-            receipt: {
-              ...r,
-              signaturesRequired: bridgeValidators[r.chainTo].length,
-            },
-            receiptMeta: [...metaEvm, ...metaSolana],
-          };
-        });
+      return result.map((r) => {
+        const metaEvm = metasEvm.filter((m) => m.receiptId === r.receiptId);
+        const metaSolana = metasSolana.filter(
+          (m) => m.receiptId === r.receiptId
+        );
+        return {
+          receipt: {
+            ...r,
+            signaturesRequired: bridgeValidators[r.chainTo].length,
+          },
+          receiptMeta: [...metaEvm, ...metaSolana],
+        };
+      });
     } catch (error) {
       consoleLogger(
         "Error selecting receipts",
@@ -299,11 +299,9 @@ export class ReceiptController {
     }));
   }
 
-  private async checkSignerEVM(
-    receiptToSign: typeof receipt.$inferSelect,
-    signer: `0x${string}`,
-    signature: `0x${string}`
-  ): Promise<`0x${string}`> {
+  hashedMsgEVM(
+    receiptToSign: typeof receipt.$inferSelect
+  ): `0x${string}` {
     const message = encodePacked(
       [
         "bytes32",
@@ -327,6 +325,31 @@ export class ReceiptController {
       ]
     );
     const messageHash = keccak256(message);
+    return messageHash;
+  }
+
+  hashedMsgSolana(
+    receiptToSign: typeof receipt.$inferSelect
+  ): `0x${string}` {
+    const value: ReceivePayload = ReceivePayload.parse({
+      to: toBytes(receiptToSign.to, { size: 32 }),
+      tokenAddressTo: toBytes(receiptToSign.tokenAddressTo, { size: 32 }),
+      amountTo: BigInt(receiptToSign.amountTo),
+      chainTo: BigInt(receiptToSign.chainTo),
+      flags: toBytes(BigInt(receiptToSign.flags), { size: 32 }),
+      flagData: toBytes(receiptToSign.data),
+    });
+    const payload = serializeReceivePayload(value);
+    const messageHash = keccak256(payload);
+    return messageHash;
+  }
+
+  private async checkSignerEVM(
+    receiptToSign: typeof receipt.$inferSelect,
+    signer: `0x${string}`,
+    signature: `0x${string}`
+  ): Promise<`0x${string}`> {
+    const messageHash = this.hashedMsgEVM(receiptToSign);
     const signerRecovered = await recoverMessageAddress({
       message: { raw: messageHash },
       signature,
@@ -344,19 +367,10 @@ export class ReceiptController {
     signer: string,
     signature: `0x${string}`
   ): Promise<string> {
-    const value: ReceivePayload = ReceivePayload.parse({
-      to: toBytes(receiptToSign.to, { size: 32 }),
-      tokenAddressTo: toBytes(receiptToSign.tokenAddressTo, { size: 32 }),
-      amountTo: BigInt(receiptToSign.amountTo),
-      chainTo: BigInt(receiptToSign.chainTo),
-      flags: toBytes(BigInt(receiptToSign.flags), { size: 32 }),
-      flagData: toBytes(receiptToSign.data),
-    });
-    const payload = serializeReceivePayload(value);
+    const messageHash = toBytes(this.hashedMsgSolana(receiptToSign));
     const signatureBytes = toBytes(signature);
-
     const isValid = nacl.sign.detached.verify(
-      payload,
+      messageHash,
       signatureBytes,
       new PublicKey(signer).toBytes()
     );

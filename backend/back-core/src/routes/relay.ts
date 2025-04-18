@@ -126,14 +126,14 @@ relayRoutes.post(
               type: "object",
               properties: {
                 signed: {
-                  type: "boolean"
-                }
+                  type: "boolean",
+                },
               },
               example: { signed: true },
-              description: "If receipt has been signed"
-            }
-          }
-        }
+              description: "If receipt has been signed",
+            },
+          },
+        },
       },
       404: {
         description: "Receipt not found",
@@ -144,12 +144,12 @@ relayRoutes.post(
               properties: {
                 message: {
                   type: "string",
-                  example: "Receipt not found"
-                }
-              }
-            }
-          }
-        }
+                  example: "Receipt not found",
+                },
+              },
+            },
+          },
+        },
       },
       400: {
         description: "Returns error message",
@@ -159,14 +159,14 @@ relayRoutes.post(
               type: "object",
               properties: {
                 message: {
-                  type: "string"
-                }
-              }
-            }
-          }
-        }
-      }
-    }
+                  type: "string",
+                },
+              },
+            },
+          },
+        },
+      },
+    },
   }),
   zValidator("param", receiptIdValidatorSchema),
   zValidator(
@@ -175,9 +175,9 @@ relayRoutes.post(
       signer: z.string().openapi({
         examples: [
           "0xe0b52EC5cE3e124ab5306ea42463bE85aeb5eDDd",
-          "FMYR5BFh3JapZS1cfwYViiBMYJxFGwKdchnghBnBtxkk"
+          "FMYR5BFh3JapZS1cfwYViiBMYJxFGwKdchnghBnBtxkk",
         ],
-        description: "Signer address"
+        description: "Signer address",
       }),
       signature: z
         .string()
@@ -189,6 +189,9 @@ relayRoutes.post(
           }
           return `0x${processed}` as `0x${string}`;
         })
+        .openapi({
+          description: "Signature of message",
+        }),
     })
   ),
   receiptControllerMiddleware.middleware("receiptController"),
@@ -196,9 +199,12 @@ relayRoutes.post(
     try {
       const { receiptController } = c.var;
       const receiptId = c.req.valid("param").receiptId;
-      const signature = c.req.valid("json").signature as `0x${string}`;
-      const signer = c.req.valid("json").signer;
-      const signed = await receiptController.addSignature(receiptId, signer, signature);
+      const { signer, signature } = c.req.valid("json");
+      const signed = await receiptController.addSignature(
+        receiptId,
+        signer,
+        signature
+      );
       return c.json({ signed }, 201);
     } catch (error) {
       let status: ContentfulStatusCode = 400;

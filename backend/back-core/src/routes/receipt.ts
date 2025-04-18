@@ -11,6 +11,7 @@ import {
 } from "./utils";
 import { Hono } from "hono";
 import { receiptControllerMiddleware } from "../../middleware/receiptController";
+import { SOLANA_CHAIN_ID, SOLANA_DEV_CHAIN_ID } from "../../config";
 
 export const receiptRoutes = new Hono<{
   Bindings: {
@@ -242,7 +243,6 @@ receiptRoutes.get(
   }
 );
 
-
 receiptRoutes.get(
   "/:receiptId",
   describeRoute({
@@ -343,12 +343,18 @@ receiptRoutes.get(
     try {
       const receiptId = c.req.valid("param").receiptId;
       const { receiptController } = c.var;
+
       const data = await receiptController.getReceiptSignatures(receiptId);
-      console.log(data);
+      const receipt = await receiptController.getReceipt(receiptId);
       return c.json(
         signaturesResponseSchema.parse({
           receiptId,
           readyForClaim: data.length >= c.env.SIGNATURES_REQUIRED,
+          messageHash: [SOLANA_CHAIN_ID, SOLANA_DEV_CHAIN_ID].includes(
+            BigInt(receipt.receipt.chainTo)
+          )
+            ? receiptController.hashedMsgSolana(receipt.receipt)
+            : receiptController.hashedMsgEVM(receipt.receipt),
           signatures: data,
         }),
         200
